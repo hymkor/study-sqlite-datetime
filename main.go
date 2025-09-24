@@ -22,21 +22,22 @@ func mains() error {
 			id           INTEGER PRIMARY KEY,
 			d_date       DATE,
 			d_time       TIME,
-			d_datetime   DATETIME)`)
+			d_datetime   DATETIME,
+			d_text       TEXT)`)
 	if err != nil {
 		return err
 	}
 
-	for _, v := range [][3]string{
-		[3]string{`'2025-09-22'`, `'14:30:00'`, `'2025-09-22 14:30:00'`},
-		[3]string{`'2025-09-22'`, `time('14:30:00')`, `'2025-09-22 14:30:00'`},
-		[3]string{`'2025/09/22'`, `'14:30'`, `'2025/09/22 14:30'`},
+	for _, v := range [][4]string{
+		[4]string{`'2025-09-22'`, `'14:30:00'`, `'2025-09-22 14:30:00'`, `'壱'`},
+		[4]string{`'2025-09-22'`, `time('14:30:00')`, `'2025-09-22 14:30:00'`, `'弐'`},
+		[4]string{`'2025/09/22'`, `'14:30'`, `'2025/09/22 14:30'`, `'参'`},
 	} {
 		sql := fmt.Sprintf(`
 			INSERT INTO t_datetime
-			(d_date, d_time, d_datetime )
+			(d_date, d_time, d_datetime, d_text)
 			VALUES
-			(%s, %s, %s)`, v[0], v[1], v[2])
+			(%s, %s, %s, %s)`, v[0], v[1], v[2], v[3])
 
 		fmt.Println(sql)
 		rc, err := conn.Exec(sql)
@@ -56,9 +57,9 @@ func mains() error {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		r := make([]any, 4)
+		r := make([]any, 5)
 
-		err := rows.Scan(&r[0], &r[1], &r[2], &r[3])
+		err := rows.Scan(&r[0], &r[1], &r[2], &r[3], &r[4])
 		if err != nil {
 			return err
 		}
@@ -73,9 +74,9 @@ func mains() error {
 	}
 	defer rows.Close()
 	for rows.Next() {
-		r := make([]sql.RawBytes, 4)
+		r := make([]sql.RawBytes, 5)
 
-		err := rows.Scan(&r[0], &r[1], &r[2], &r[3])
+		err := rows.Scan(&r[0], &r[1], &r[2], &r[3], &r[4])
 		if err != nil {
 			return err
 		}
