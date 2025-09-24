@@ -6,7 +6,7 @@ Pure Go の SQLite3 ドライバでの日時系カラムの取り扱い
 
 SQLite3 で `DATE`型、`TIME`型、`DATETIME`型は実質文字列カラムとされているが、Pure Go の SQLite3 ドライバ [glebarez/go-sqlite](github.com/glebarez/go-sqlite) で any 型で受けとった時、time.Time 型に格納されることが分かっている。が、イレギュラーな表現だった場合、どうなることだろうか？
 
-また `RawBytes` に格納した場合は、どうなるか？
+また `string`, `RawBytes` に格納した場合は、どうなるか？
 
 この検証結果により、SELECT 文で得た値をありのままデータベースに再格納する方法を検討する。
 
@@ -67,6 +67,7 @@ func mains() error {
         }
     }
 
+    fmt.Println("(any)")
     rows, err := conn.Query(`SELECT * from t_datetime`)
     if err != nil {
         return err
@@ -84,6 +85,27 @@ func mains() error {
         }
         fmt.Println()
     }
+
+    fmt.Println("(string)")
+    rows, err = conn.Query(`SELECT * from t_datetime`)
+    if err != nil {
+        return err
+    }
+    defer rows.Close()
+    for rows.Next() {
+        r := make([]string, 5)
+
+        err := rows.Scan(&r[0], &r[1], &r[2], &r[3], &r[4])
+        if err != nil {
+            return err
+        }
+        for _, v := range r {
+            fmt.Println(v)
+        }
+        fmt.Println()
+    }
+
+    fmt.Println("(RawBytes)")
     rows, err = conn.Query(`SELECT * from t_datetime`)
     if err != nil {
         return err
@@ -136,6 +158,7 @@ create table
             VALUES
             ('2025/09/22', '14:30', '2025/09/22 14:30', '参')
 1 record(s) updated.
+(any)
 1 as int64
 time.Date(2025, time.September, 22, 0, 0, 0, 0, time.UTC) as time.Time
 "14:30:00" as string
@@ -154,6 +177,26 @@ time.Date(2025, time.September, 22, 14, 30, 0, 0, time.UTC) as time.Time
 "2025/09/22 14:30" as string
 "参" as string
 
+(string)
+1
+2025-09-22T00:00:00Z
+14:30:00
+2025-09-22T14:30:00Z
+壱
+
+2
+2025-09-22T00:00:00Z
+14:30:00
+2025-09-22T14:30:00Z
+弐
+
+3
+2025/09/22
+14:30
+2025/09/22 14:30
+参
+
+(RawBytes)
 1
 2025-09-22T00:00:00Z
 14:30:00
@@ -183,7 +226,7 @@ time.Date(2025, time.September, 22, 14, 30, 0, 0, time.UTC) as time.Time
         - イレギュラーな値は `string` 型となる
     - `TIME`型:
         - 常に`string` 型に変換される
-- `RawBytes` 型変数に格納させた後、それを string 型に変えた場合:
+- `string` , `RawBytes` 型変数に格納させた場合:
     - `DATE`型, `DATETIME`型:
         - 正規の書式で登録された値は `2006-01-02T15:04:05Z` 形式となる
         - イレギュラーな値は、ありのまま格納される
