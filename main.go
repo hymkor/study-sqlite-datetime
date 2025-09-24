@@ -51,6 +51,7 @@ func mains() error {
 		}
 	}
 
+	fmt.Println("(any)")
 	rows, err := conn.Query(`SELECT * from t_datetime`)
 	if err != nil {
 		return err
@@ -68,6 +69,27 @@ func mains() error {
 		}
 		fmt.Println()
 	}
+
+	fmt.Println("(string)")
+	rows, err = conn.Query(`SELECT * from t_datetime`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		r := make([]string, 5)
+
+		err := rows.Scan(&r[0], &r[1], &r[2], &r[3], &r[4])
+		if err != nil {
+			return err
+		}
+		for _, v := range r {
+			fmt.Println(v)
+		}
+		fmt.Println()
+	}
+
+	fmt.Println("(RawBytes)")
 	rows, err = conn.Query(`SELECT * from t_datetime`)
 	if err != nil {
 		return err
