@@ -1,18 +1,3 @@
-Pure Go の SQLite3 ドライバでの日時系カラムの取り扱い
-=====================================================
-
-検証内容
---------
-
-SQLite3 で `DATE`型、`TIME`型、`DATETIME`型は実質文字列カラムとされているが、Pure Go の SQLite3 ドライバ [glebarez/go-sqlite] で any 型で受けとった時、time.Time 型に格納されることが分かっている。が、イレギュラーな表現だった場合、どうなることだろうか？
-
-また `string`, `RawBytes` に格納した場合は、どうなるか？
-
-この検証結果により、SELECT 文で得た値をありのままデータベースに再格納する方法を検討する。
-
-検証プログラム
---------------
-
 ```main.go
 package main
 
@@ -21,10 +6,11 @@ import (
     "fmt"
     "os"
 
-    _ "github.com/glebarez/go-sqlite/compat"
+    "github.com/mattn/go-sqlite3"
 )
 
 func mains() error {
+    sqlite3.SQLiteTimestampFormats = sqlite3.SQLiteTimestampFormats[:0]
     println("open")
     conn, err := sql.Open("sqlite3", ":memory:")
     if err != nil {
@@ -134,10 +120,7 @@ func main() {
 }
 ```
 
-検証プログラムの実行結果
-------------------------
-
-```./study-sqlite-datetime |
+```./mattn |
 open
 create table
 
@@ -160,89 +143,59 @@ create table
 1 record(s) updated.
 (any)
 1 as int64
-time.Date(2025, time.September, 22, 0, 0, 0, 0, time.UTC) as time.Time
+time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC) as time.Time
 "14:30:00" as string
-time.Date(2025, time.September, 22, 14, 30, 0, 0, time.UTC) as time.Time
+time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC) as time.Time
 "壱" as string
 
 2 as int64
-time.Date(2025, time.September, 22, 0, 0, 0, 0, time.UTC) as time.Time
+time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC) as time.Time
 "14:30:00" as string
-time.Date(2025, time.September, 22, 14, 30, 0, 0, time.UTC) as time.Time
+time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC) as time.Time
 "弐" as string
 
 3 as int64
-"2025/09/22" as string
+time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC) as time.Time
 "14:30" as string
-"2025/09/22 14:30" as string
+time.Date(1, time.January, 1, 0, 0, 0, 0, time.UTC) as time.Time
 "参" as string
 
 (string)
 1
-2025-09-22T00:00:00Z
+0001-01-01T00:00:00Z
 14:30:00
-2025-09-22T14:30:00Z
+0001-01-01T00:00:00Z
 壱
 
 2
-2025-09-22T00:00:00Z
+0001-01-01T00:00:00Z
 14:30:00
-2025-09-22T14:30:00Z
+0001-01-01T00:00:00Z
 弐
 
 3
-2025/09/22
+0001-01-01T00:00:00Z
 14:30
-2025/09/22 14:30
+0001-01-01T00:00:00Z
 参
 
 (RawBytes)
 1
-2025-09-22T00:00:00Z
+0001-01-01T00:00:00Z
 14:30:00
-2025-09-22T14:30:00Z
+0001-01-01T00:00:00Z
 壱
 
 2
-2025-09-22T00:00:00Z
+0001-01-01T00:00:00Z
 14:30:00
-2025-09-22T14:30:00Z
+0001-01-01T00:00:00Z
 弐
 
 3
-2025/09/22
+0001-01-01T00:00:00Z
 14:30
-2025/09/22 14:30
+0001-01-01T00:00:00Z
 参
 
 ```
-
-結果
----
-
-- `any` 型変数に格納しようとした場合:
-    - `DATE`型, `DATETIME`型:
-        - 正規の書式で登録された値は `time.Time` 型に変換される
-        - イレギュラーな値は `string` 型となる
-    - `TIME`型:
-        - 常に`string` 型に変換される
-- `string` , `RawBytes` 型変数に格納させた場合:
-    - `DATE`型, `DATETIME`型:
-        - 正規の書式で登録された値は `2006-01-02T15:04:05Z` 形式となる
-        - イレギュラーな値は、ありのまま格納される
-    - `TIME`型:
-        - 格納された時のまま
-
-課題
-----
-
-どの範囲までが正規の書式であるかを確認しなくてはいけない
-
-- [mattn/go-sqlite3] の場合 `SQLiteTimestampFormats` で定義されている。  
-    → `sqlite3.SQLiteTimestampFormats = sqlite3.SQLiteTimestampFormats[:0]`
-       とかにすると常に文字列で扱ってくれそう  
-    → [だめだった](./mattn/README.md)
-- [glebarez/go-sqlite] には該当のものは、なさそう
-
-[mattn/go-sqlite3]: https://github.com/mattn/go-sqlite3
-[glebarez/go-sqlite]: https://github.com/glebarez/go-sqlite
