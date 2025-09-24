@@ -27,37 +27,29 @@ func mains() error {
 		return err
 	}
 
-	println("insert table-1")
-	rc, err := conn.Exec(`
-		INSERT INTO t_datetime
-		(d_date, d_time, d_datetime )
-		VALUES
-		('2025-09-22', '14:30:00', '2025-09-22 14:30:00')`)
-	if err != nil {
-		return err
-	}
-	if count, err := rc.RowsAffected(); err != nil {
-		return err
-	} else {
-		println(count, "record(s) updated.")
+	for _, v := range [][3]string{
+		[3]string{`'2025-09-22'`, `'14:30:00'`, `'2025-09-22 14:30:00'`},
+		[3]string{`'2025-09-22'`, `time('14:30:00')`, `'2025-09-22 14:30:00'`},
+		[3]string{`'2025/09/22'`, `'14:30'`, `'2025/09/22 14:30'`},
+	} {
+		sql := fmt.Sprintf(`
+			INSERT INTO t_datetime
+			(d_date, d_time, d_datetime )
+			VALUES
+			(%s, %s, %s)`, v[0], v[1], v[2])
+
+		fmt.Println(sql)
+		rc, err := conn.Exec(sql)
+		if err != nil {
+			return err
+		}
+		if count, err := rc.RowsAffected(); err != nil {
+			return err
+		} else {
+			println(count, "record(s) updated.")
+		}
 	}
 
-	println("insert table-2")
-	rc, err = conn.Exec(`
-		INSERT INTO t_datetime
-		(d_date, d_time, d_datetime )
-		VALUES
-		('2025/09/22', '14:30', '2025/09/22 14:30')`)
-	if err != nil {
-		return err
-	}
-	if count, err := rc.RowsAffected(); err != nil {
-		return err
-	} else {
-		println(count, "record(s) updated.")
-	}
-
-	println("query table")
 	rows, err := conn.Query(`SELECT * from t_datetime`)
 	if err != nil {
 		return err
@@ -70,8 +62,25 @@ func mains() error {
 		if err != nil {
 			return err
 		}
-		for i, v := range r {
-			fmt.Printf("%d: %#v %T\n", i, v, v)
+		for _, v := range r {
+			fmt.Printf("%#v as %T\n", v, v)
+		}
+		fmt.Println()
+	}
+	rows, err = conn.Query(`SELECT * from t_datetime`)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		r := make([]sql.RawBytes, 4)
+
+		err := rows.Scan(&r[0], &r[1], &r[2], &r[3])
+		if err != nil {
+			return err
+		}
+		for _, v := range r {
+			fmt.Println(string(v))
 		}
 		fmt.Println()
 	}
