@@ -4,7 +4,7 @@ Pure Go の SQLite3 ドライバでの日時系カラムの取り扱い
 検証内容
 --------
 
-SQLite3 で `DATE`型、`TIME`型、`DATETIME`型は実質文字列カラムとされているが、Pure Go の SQLite3 ドライバ [glebarez/go-sqlite](github.com/glebarez/go-sqlite) で any 型で受けとった時、time.Time 型に格納されることが分かっている。が、イレギュラーな表現だった場合、どうなることだろうか？
+SQLite3 で `DATE`型、`TIME`型、`DATETIME`型は実質文字列カラムとされているが、Pure Go の SQLite3 ドライバ [glebarez/go-sqlite] で any 型で受けとった時、time.Time 型に格納されることが分かっている。が、イレギュラーな表現だった場合、どうなることだろうか？
 
 また `string`, `RawBytes` に格納した場合は、どうなるか？
 
@@ -237,3 +237,11 @@ time.Date(2025, time.September, 22, 14, 30, 0, 0, time.UTC) as time.Time
 ----
 
 どの範囲までが正規の書式であるかを確認しなくてはいけない
+
+- [mattn/go-sqlite3] の場合 `SQLiteTimestampFormats` で定義されている。  
+    → `sqlite3.SQLiteTimestampFormats = sqlite3.SQLiteTimestampFormats[:0]`
+       とかにすると常に文字列で扱ってくれそう
+- [glebarez/go-sqlite] には該当のものは、なさそう
+
+[mattn/go-sqlite3]: https://github.com/mattn/go-sqlite3
+[glebarez/go-sqlite]: https://github.com/glebarez/go-sqlite
